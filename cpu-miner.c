@@ -105,6 +105,7 @@ enum sha256_algos {
 	ALGO_SHA256D,		/* SHA-256d */
 	ALGO_QUARK,
 	ALGO_X,
+        ALGO_SIB,
 };
 
 static const char *algo_names[] = {
@@ -112,6 +113,7 @@ static const char *algo_names[] = {
 	[ALGO_SHA256D]		= "sha256d",
 	[ALGO_QUARK]		= "quark",
 	[ALGO_X]			= "X11",
+        [ALGO_SIB]              = "sibcoin",
 };
 
 bool opt_hashdebug = false;
@@ -170,10 +172,11 @@ static char const usage[] = "\
 Usage: " PROGRAM_NAME " [OPTIONS]\n\
 Options:\n\
   -a, --algo=ALGO       specify the algorithm to use\n\
-                          scrypt    scrypt(1024, 1, 1) (default)\n\
-                          sha256d   SHA-256d\n\
-                          quark     Quarkcoin\n\
-						  X11       Xcoin\n\
+                            scrypt    scrypt(1024, 1, 1) (default)\n\
+                            sha256d   SHA-256d\n\
+                            quark     Quarkcoin\n\
+                            X11       Xcoin\n\
+                            sibcoin\n\
   -o, --url=URL         URL of mining server (default: " DEF_RPC_URL ")\n\
   -O, --userpass=U:P    username:password pair for mining server\n\
   -u, --user=USERNAME   username for mining server\n\
@@ -796,7 +799,11 @@ static void *miner_thread(void *userdata)
 			rc = scanhash_X(thr_id, work.data, work.target,
 			                      max_nonce, &hashes_done);
 			break;
-		default:
+		case ALGO_SIB:
+			rc = scanhash_SIB(thr_id, work.data, work.target,
+			                      max_nonce, &hashes_done);
+			break;		
+                    default:
 			/* should never happen */
 			goto out;
 		}
@@ -1220,6 +1227,7 @@ static void parse_arg (int key, char *arg)
 	case 'h':
 		show_usage_and_exit(0);
 	default:
+            printf("%d", key);
 		show_usage_and_exit(1);
 	}
 }
@@ -1299,6 +1307,16 @@ void signal_handler(int sig)
 }
 #endif
 
+//char * hexx(unsigned char *hval){
+//    static char finalhash[128];
+//    char hexval[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+//    for(int j = 0; j < 64; j++){
+//        finalhash[j*2] = hexval[((hval[j] >> 4) & 0xF)];
+//        finalhash[(j*2) + 1] = hexval[(hval[j]) & 0x0F];
+//    }
+//    return finalhash;
+//}
+//
 int main(int argc, char *argv[])
 {
 	struct thr_info *thr;
@@ -1322,8 +1340,43 @@ int main(int argc, char *argv[])
 	{
 		init_Xhash_contexts();
 	}
-	
-	
+
+	if (opt_algo==ALGO_SIB)
+	{
+		init_SIBhash_contexts();
+	}	
+//        if (1) {
+//            uint32_t hash64[8] __attribute__((aligned(32)));
+//            unsigned char endiandata[64] = {0x31};
+//            char str_buf[512+1] = {'0'};
+//            char *buf_ptr = &str_buf[0];
+//            unsigned int mask = 0xFF;
+//
+//            init_SIBhash_contexts();
+//
+////            for (i = 0; i < 64; i++) {
+////                endiandata[i] = 0x30 + i;
+////            }
+//
+//            Gosthash(hash64, &endiandata);
+//            
+////            for (i = 0; i < 8; i++)
+////            {
+////                int k;
+//// 
+////                for (k = 0; k < 32; k += 4) {
+////                    printf("k=%d\n", k);
+////                    sprintf(buf_ptr, "%02X", (hash64[i] >> k) & 0xF);
+////                    printf("%s(%x)\n", buf_ptr, buf_ptr);
+////                    buf_ptr += 2;
+////                }
+////            }
+////            *(buf_ptr + 1) = '\0';
+//            
+//
+//            printf("Hash=%s", hexx(hash64));
+//            return 0;
+//        }       
 	pthread_mutex_init(&applog_lock, NULL);
 	pthread_mutex_init(&stats_lock, NULL);
 	pthread_mutex_init(&g_work_lock, NULL);
